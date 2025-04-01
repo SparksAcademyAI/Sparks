@@ -21,6 +21,11 @@ function getHeaders() {
   };
 }
 
+
+app.get("/", (req, res) => {
+  res.json({ message: "Welcome to the API" });
+});
+
 app.post("/check-email", async (req, res) => {
   try {
     const { email } = req.body;

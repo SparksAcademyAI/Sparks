@@ -1,0 +1,650 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1.0" />
+  <title>Sparks AI Mentor - LUXE + Google Sheet</title>
+  <!-- Google Fonts: Poppins + System Font -->
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --transition-speed: 0.4s;
+      --luxe-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+      --luxe-border-radius: 16px;
+      --brand-purple: #5A3E8C;
+      --border-color: #ddd;
+      --form-bg: #fff;
+      --input-radius: 8px;
+    }
+    body {
+      margin: 0;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen, Ubuntu, Cantarell, "Open Sans", "Helvetica Neue", sans-serif;
+      background-color: #f8f9fa;
+      transition: background-color var(--transition-speed) ease;
+    }
+    /* 
+      1) Gate (overlay)
+    */
+    #gate-wrapper {
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.15);
+      backdrop-filter: blur(8px);
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      z-index: 9999;
+    }
+    #gate-form {
+      background: var(--form-bg);
+      border-radius: var(--luxe-border-radius);
+      box-shadow: var(--luxe-shadow);
+      width: 90%;
+      max-width: 400px;
+      padding: 30px;
+      text-align: center;
+      animation: fadeIn var(--transition-speed) ease forwards;
+    }
+    #gate-form h2 {
+      margin-bottom: 16px;
+      font-weight: 600;
+      font-family: "Poppins", sans-serif;
+    }
+    #gate-form input[type="text"],
+    #gate-form input[type="email"] {
+      width: 80%;
+      padding: 12px;
+      font-size: 14px;
+      margin: 8px 0;
+      border-radius: var(--input-radius);
+      border: 2px solid var(--border-color);
+      outline: none;
+      font-family: "Poppins", sans-serif;
+    }
+    #gate-form input[type="submit"] {
+      margin-top: 16px;
+      padding: 12px 24px;
+      border: none;
+      border-radius: var(--input-radius);
+      background: var(--brand-purple);
+      color: #fff;
+      font-weight: bold;
+      cursor: pointer;
+      transition: background var(--transition-speed), box-shadow 0.3s, transform 0.3s;
+      font-family: "Poppins", sans-serif;
+    }
+    #gate-form input[type="submit"]:hover {
+      background: #472f73;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+      transform: translateY(-1px);
+    }
+    #gate-form input[type="submit"]:active {
+      transform: translateY(1px);
+      box-shadow: none;
+    }
+    #gate-error {
+      color: red;
+      margin-top: 10px;
+      display: none;
+      font-family: "Poppins", sans-serif;
+    }
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(30px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    /* 
+      2) Reveal chat post-gate
+    */
+    #chat-container {
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity var(--transition-speed) ease;
+    }
+    .unlocked #chat-container {
+      opacity: 1;
+      pointer-events: auto;
+    }
+    /*
+      3) Chat styling
+    */
+    #chat-container {
+      width: 90%;
+      max-width: 450px;
+      margin: 40px auto;
+      background: var(--form-bg);
+      padding: 20px;
+      border-radius: var(--luxe-border-radius);
+      box-shadow: var(--luxe-shadow);
+      border: 2px solid var(--border-color);
+      text-align: center;
+      font-family: "Poppins", sans-serif;
+    }
+    #welcome-text {
+      text-align: center;
+      margin-bottom: 15px;
+    }
+    #chat-log {
+      height: 230px;
+      overflow-y: auto;
+      border-bottom: 2px solid #e0e0e0;
+      margin-bottom: 15px;
+      padding: 10px;
+      text-align: left;
+      font-size: 14px;
+      line-height: 1.5;
+    }
+    #user-input {
+      width: 80%;
+      padding: 12px;
+      font-size: 14px;
+      margin: 8px 0;
+      border-radius: var(--input-radius);
+      border: 2px solid var(--border-color);
+      outline: none;
+      font-family: "Poppins", sans-serif;
+    }
+    .button-group {
+      display: flex;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      margin-top: 10px;
+    }
+    #send-btn,
+    #clear-btn {
+      flex: 1;
+      padding: 12px;
+      font-size: 16px;
+      font-weight: bold;
+      border: none;
+      border-radius: var(--input-radius);
+      cursor: pointer;
+      transition: background 0.3s, box-shadow 0.3s, transform 0.3s;
+      margin: 5px;
+      background: var(--brand-purple);
+      color: white;
+      font-family: "Poppins", sans-serif;
+    }
+    #send-btn:hover,
+    #clear-btn:hover {
+      background: #472f73;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+      transform: translateY(-1px);
+    }
+    /* Chat messages */
+    .message {
+      display: flex;
+      align-items: flex-start;
+      margin-bottom: 12px;
+    }
+    .message.user {
+      justify-content: flex-end;
+    }
+    .message .bubble {
+      max-width: 80%;
+      padding: 10px;
+      border-radius: 12px;
+      font-size: 14px;
+      line-height: 1.5;
+      font-family: "Poppins", sans-serif;
+    }
+    .message.user .bubble {
+      background: #0073b1;
+      color: white;
+      border-bottom-right-radius: 0;
+    }
+    .message.bot .bubble {
+      background: #e3f2fd;
+      color: #333;
+      border-bottom-left-radius: 0;
+    }
+    /* Thinking dots */
+    .thinking-dots {
+      display: inline-block;
+    }
+    @keyframes blink {
+      0% { opacity: 0.2; }
+      20% { opacity: 1; }
+      100% { opacity: 0.2; }
+    }
+    .thinking-dots span {
+      animation: blink 1.4s infinite both;
+      font-weight: bold;
+      font-size: 24px;
+      margin: 0 2px;
+    }
+    .thinking-dots span:nth-child(2) {
+      animation-delay: 0.2s;
+    }
+    .thinking-dots span:nth-child(3) {
+      animation-delay: 0.4s;
+    }
+    .spinner {
+      width: 16px;
+      height: 16px;
+      border: 2px solid rgba(255, 255, 255, 0.3);
+      border-top: 2px solid white;
+      border-radius: 50%;
+      display: inline-block;
+      animation: spin 1s linear infinite;
+      margin-left: 8px;
+      vertical-align: middle;
+    }
+
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+
+  </style>
+</head>
+<body>
+  <!-- 1) The GATE (Name + Email) -->
+  <div id="gate-wrapper">
+    <form id="gate-form">
+      <h2>Enter Your Details</h2>
+      <input type="text" id="gate-name" placeholder="First Name" required />
+      <br />
+      <input type="email" id="gate-email" placeholder="Email" required />
+      <br />
+      <!-- Access Chat on Submit -->
+      <input type="submit" value="Access Chat" id="access-btn" />
+      <span id="spinner" class="spinner" style="display: none;"></span>
+      <div id="gate-error">This email is not on the access list.</div>
+    </form>
+  </div>
+
+  <!-- 2) The Chat Container -->
+  <div id="chat-container">
+    <div id="welcome-text">
+      <h3>Sparks AI Mentor</h3>
+      <p>
+        Hey there! 👋 I’m your <strong>Sparks Academy Mentor</strong>, here to support you.
+      </p>
+    </div>
+    <div id="chat-log"></div>
+    <input type="text" id="user-input" placeholder="Type your message..." autocomplete="off" />
+    <div class="button-group">
+      <button id="send-btn">Send</button>
+      <button id="clear-btn">Clear Chat</button>
+    </div>
+  </div>
+  <script>
+  const Api_Url ="http://localhost:5000/api";
+    let userName = "";
+    let userEmail = "";
+    // Global to store last user question for logging
+    let lastUserQuestion = "";
+    // Gate logic
+    const gateWrapper = document.getElementById("gate-wrapper");
+    const gateForm = document.getElementById("gate-form");
+    const gateError = document.getElementById("gate-error");
+    const gateName = document.getElementById("gate-name");
+    const gateEmail = document.getElementById("gate-email");
+
+    // Force Enter key to submit (in case normal form submit is blocked)
+[gateName, gateEmail].forEach(input => {
+  input.addEventListener("keypress", (e) => {
+    if (e.key === "Enter") {
+      e.preventDefault();
+      gateForm.dispatchEvent(new Event("submit"));
+    }
+  });
+});
+
+gateForm.addEventListener("submit", async function (event) {
+  event.preventDefault();
+  userName = gateName.value.trim();
+  userEmail = gateEmail.value.trim().toLowerCase();
+
+  const submitButton = gateForm.querySelector('input[type="submit"]');
+
+  // Show loading state
+  submitButton.disabled = true;
+  submitButton.value = "Loading...";
+  submitButton.style.opacity = "0.7";
+
+  try {
+    const response = await fetch(`${Api_Url}/check-email`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ email: userEmail }),
+    });
+
+    const data = await response.json();
+
+    if (data.allowed) {
+      document.body.classList.add("unlocked");
+      gateWrapper.style.display = "none";
+      console.log("Access granted to:", userName, userEmail);
+    } else {
+      gateError.style.display = "block";
+    }
+  } catch (error) {
+    console.error("Error checking email:", error);
+    gateError.textContent = "Error connecting to email list.";
+    gateError.style.display = "block";
+  }
+
+  // Reset button state after response
+  submitButton.disabled = false;
+  submitButton.value = "Access Chat";
+  submitButton.style.opacity = "1";
+});
+
+
+    /*
+      3) The Chat Code
+    */
+
+    let threadId = null;
+    let runInProgress = false;
+    let typewriterIntervalId = null;
+    let conversation = [];
+    // On page load, load saved conversation (if any) but don't inject a duplicate welcome message.
+    window.onload = function () {
+      loadConversation();
+      conversation.forEach(({ content, sender }) => {
+        displayMessage(content, sender, true);
+      });
+    };
+    // Chat Buttons
+    document.getElementById("send-btn").addEventListener("click", sendMessage);
+    document.getElementById("user-input").addEventListener("keypress", function (event) {
+      if (event.key === "Enter") {
+        event.preventDefault();
+        sendMessage();
+      }
+    });
+    document.getElementById("clear-btn").addEventListener("click", function () {
+      document.getElementById("chat-log").innerHTML = "";
+      threadId = null;
+      runInProgress = false;
+      clearInterval(typewriterIntervalId);
+      conversation = [];
+      saveConversation();
+      console.log("Chat cleared.");
+    });
+
+    async function sendMessage() {
+      const userMessage = document.getElementById("user-input").value.trim();
+      if (!userMessage) return;
+      if (runInProgress) {
+        displayMessage("Please wait for the assistant to finish responding.", "bot");
+        return;
+      }
+      // Store the question for logging
+      lastUserQuestion = userMessage;
+      displayMessage(userMessage, "user");
+      document.getElementById("user-input").value = "";
+      try {
+        if (!threadId) {
+          const threadData = await createThread();
+          if (!threadData || !threadData.threadId) throw new Error("Thread creation failed");
+          threadId = threadData.threadId;
+        }
+        await sendMessageToThread(userMessage,threadId);
+        runInProgress = true;
+        const runId = await startAssistantRun(threadId);
+        await checkRunStatusAndFetchResponse(runId,threadId);
+        runInProgress = false;
+      } catch (error) {
+        console.error("Chatbot Error:", error);
+        displayMessage(`⚠️ Error: ${error.message}`, "bot");
+        runInProgress = false;
+      }
+    }
+    function displayMessage(content, sender, skipTypewriter = false) {
+      const chatLog = document.getElementById("chat-log");
+      const messageDiv = document.createElement("div");
+      messageDiv.classList.add("message", sender);
+      const bubble = document.createElement("div");
+      bubble.classList.add("bubble");
+      messageDiv.appendChild(bubble);
+      chatLog.appendChild(messageDiv);
+      chatLog.scrollTop = chatLog.scrollHeight;
+      conversation.push({ content, sender });
+      saveConversation();
+      if (sender === "bot" && !skipTypewriter) {
+        const formatted = formatMessage(content);
+        bubble.innerHTML = "";
+        typeWriterHTML(bubble, formatted, 20);
+      } else {
+        bubble.innerHTML = formatMessage(content);
+      }
+    }
+    function typeWriterHTML(element, html, speed) {
+      const tokens = html.split(/(<[^>]+>)/g);
+      let currentHTML = "";
+      let tokenIndex = 0;
+      let charIndex = 0;
+      const chatLog = document.getElementById("chat-log");
+      typewriterIntervalId = setInterval(() => {
+        if (tokenIndex >= tokens.length) {
+          clearInterval(typewriterIntervalId);
+          return;
+        }
+        const token = tokens[tokenIndex];
+        if (token.startsWith("<") && token.endsWith(">")) {
+          currentHTML += token;
+          tokenIndex++;
+          charIndex = 0;
+          element.innerHTML = currentHTML;
+        } else {
+          if (charIndex < token.length) {
+            currentHTML += token.charAt(charIndex);
+            charIndex++;
+            element.innerHTML = currentHTML;
+          } else {
+            tokenIndex++;
+            charIndex = 0;
+          }
+        }
+        chatLog.scrollTop = chatLog.scrollHeight;
+      }, speed);
+    }
+
+    function formatMessage(text) {
+      let formattedText = text;
+      // Linkify [title](url)
+      formattedText = formattedText.replace(
+        /\[(.+?)\]\((https?:\/\/[^\s)]+)\)/g,
+        '<a href="$2" target="_blank">$1</a>'
+      );
+      // Bold **text**
+      formattedText = formattedText.replace(/\*\*(.+?)\*\*/g, "<strong>$1</strong>");
+      // Italic *text*
+      formattedText = formattedText.replace(
+        /(^|[\s>])\*([^*]+?)\*($|[\s<])/g,
+        "$1<em>$2</em>$3"
+      );
+      // Paragraph breaks for '---'
+      if (formattedText.includes("---")) {
+        formattedText = formattedText
+          .split("---")
+          .map((paragraph) => paragraph.trim())
+          .filter((paragraph) => paragraph.length > 0)
+          .map((paragraph) => `<p>${paragraph}</p>`)
+          .join("");
+      } else {
+        // newlines => <br>
+        formattedText = formattedText.replace(/\n/g, "<br>");
+      }
+      return formattedText;
+    }
+    
+
+    async function createThread() {
+         try {
+        const response = await fetch(`${Api_Url}/create-thread`, {
+                method: 'POST'
+            });
+            const data = await response.json();
+            console.log("Thread Response:", data.threadId);
+            // if (data.error) throw new Error(data.error.message);
+            if (!data.threadId) throw new Error("Thread creation failed: No thread ID returned.");
+            return data;
+          } catch (error) {
+            console.error("Thread Error:", error);
+            displayMessage(`⚠️ Error creating thread: ${error.message}`, "bot");
+            throw error;
+          }
+        }
+    
+
+        async function sendMessageToThread(userMessage, threadId) {
+              try {
+                const response = await fetch(`${Api_Url}/send-message`, {
+                  method: "POST",
+                  headers: {
+                    "Content-Type": "application/json",
+                  },
+                  body: JSON.stringify({ threadId, userMessage }),
+                });
+
+                const data = await response.json();
+                console.log("Message Response:", data);
+
+                if (!response.ok) {
+                  throw new Error(data.error || "Failed to send message");
+                }
+
+                return data;
+              } catch (error) {
+                console.error("Message Error:", error);
+                displayMessage(`⚠️ Error sending message: ${error.message}`, "bot");
+                throw error;
+              }
+            }
+
+
+        // **Start Assistant Run via Backend**
+        async function startAssistantRun(threadId) {
+          try {
+            const response = await fetch(`${Api_Url}/start-run`, {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json",
+              },
+              body: JSON.stringify({ threadId }),
+            });
+            const data = await response.json();
+            console.log("Run Response:", data);
+            if (!response.ok) {
+              throw new Error(data.error || "Failed to start assistant run");
+            }
+            return data.runId;
+          } catch (error) {
+            console.error("Run Error:", error);
+            displayMessage(`⚠️ Error starting assistant run: ${error.message}`, "bot");
+            throw error;
+          }
+        }
+
+        // **Check Run Status & Fetch Response**
+        async function checkRunStatusAndFetchResponse(runId, threadId) {
+          const thinkingIndicator = displayThinkingIndicator();
+          try {
+            let runComplete = false;
+            while (!runComplete) {
+              await new Promise((resolve) => setTimeout(resolve, 50));
+              const response = await fetch(`${Api_Url}/check-run-status`, {
+                method: "POST",
+                headers: {
+                  "Content-Type": "application/json",
+                },
+                body: JSON.stringify({ threadId, runId }),
+              });
+              const data = await response.json();
+              console.log("Run Status:", data);
+              if (data.status === "completed") {
+                runComplete = true;
+                thinkingIndicator.remove();
+                await fetchAssistantResponse(threadId);
+              }
+            }
+          } catch (error) {
+            console.error("Status Error:", error);
+            thinkingIndicator.remove();
+            displayMessage("⚠️ Error checking assistant status.", "bot");
+            throw error;
+          }
+        }
+    // **Fetch Assistant Response**
+    async function fetchAssistantResponse(threadId) {
+      try {
+        const response = await fetch(`${Api_Url}/fetch-response`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ threadId }),
+        });
+        const data = await response.json();
+        console.log("Fetch Response:", data);
+
+        if (!response.ok) {
+          throw new Error(data.error || "Failed to fetch response");
+        }
+        const botMessage = data.response || "No response received.";
+        displayMessage(botMessage, "bot");
+        // Log the Q&A pair after displaying the response (with timestamp)
+          logQnA(userEmail, lastUserQuestion, botMessage);
+      } catch (error) {
+        console.error("Response Error:", error);
+        displayMessage("⚠️ Error fetching AI response.", "bot");
+        throw error;
+      }
+    }
+    
+
+    function displayThinkingIndicator() {
+      const chatLog = document.getElementById("chat-log");
+      const messageDiv = document.createElement("div");
+      messageDiv.classList.add("message", "bot");
+      const bubble = document.createElement("div");
+      bubble.classList.add("bubble");
+      bubble.innerHTML =
+        '<div class="thinking-dots"><span>.</span><span>.</span><span>.</span></div>';
+      messageDiv.appendChild(bubble);
+      chatLog.appendChild(messageDiv);
+      chatLog.scrollTop = chatLog.scrollHeight;
+      return messageDiv;
+    }
+
+    // Q&A Logging Function with Timestamp
+    async function logQnA(email, question, response) {
+        try {
+          const payload = { email, question, response };
+          const res = await fetch(`${Api_Url}/log-qna`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(payload),
+          });
+          const result = await res.json();
+          console.log("QnA Log response:", result);
+        } catch (err) {
+          console.error("Error logging QnA:", err);
+        }
+      }
+
+    function saveConversation() {
+      try {
+        localStorage.setItem("sparksChatConversation", JSON.stringify(conversation));
+      } catch (e) {
+        console.error("Error saving to localStorage:", e);
+      }
+    }
+
+    function loadConversation() {
+      try {
+        const saved = localStorage.getItem("sparksChatConversation");
+        if (saved) {
+          conversation = JSON.parse(saved);
+        }
+      } catch (e) {
+        console.error("Error loading from localStorage:", e);
+      }
+    }
+  </script>
+</body>
+</html>

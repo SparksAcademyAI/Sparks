@@ -1,27 +1,12 @@
 {
-  "name": "vercel-openai-backend",
+  "name": "express-vercel",
   "version": "1.0.0",
-  "description": "OpenAI API backend for Vercel",
-  "main": "index.js",
-  "type": "module",
+  "main": "server.js",
   "scripts": {
-    "start": "node server.js",
-    "dev": "nodemon server.js"
+    "start": "vercel dev"
   },
-  
   "dependencies": {
-    "axios": "^1.8.4",
-    "body-parser": "^2.2.0",
-    "cors": "^2.8.5",
-    "dotenv": "^16.4.7",
-    "express": "^4.21.2",
-    "googleapis": "^148.0.0",
-    "openai": "^4.20.0"
-  },
-  "devDependencies": {
-    "nodemon": "^3.0.1"
-  },
-  "engines": {
-    "node": ">=18.0.0"
+    "express": "^4.18.2",
+    "serverless-http": "^3.0.0"
   }
 }

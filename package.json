@@ -1,12 +1,21 @@
 {
-  "name": "express-vercel",
+  "name": "express-vercel-app",
   "version": "1.0.0",
-  "main": "server.js",
+  "description": "Express.js app deployed to Vercel",
+  "main": "api/index.js",
   "scripts": {
-    "start": "vercel dev"
+    "dev": "vercel dev",
+    "start": "node api/index.js"
   },
   "dependencies": {
-    "express": "^4.18.2",
-    "serverless-http": "^3.0.0"
+    "axios": "^1.8.4",
+    "body-parser": "^1.20.2",
+    "cors": "^2.8.5",
+    "dotenv": "^16.4.7",
+    "express": "^4.21.2",
+    "googleapis": "^148.0.0",
+    "node-fetch": "^2.6.7",
+    "openai": "^4.20.0",
+    "serverless-http": "^3.1.0"
   }
 }
